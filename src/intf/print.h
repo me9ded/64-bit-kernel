@@ -20,6 +20,6 @@ enum{
 	PRINT_COLOR_WHITE = 15,
 };
 void print_clear();
-void print_char(char character);
-void print_str(char* string);
-void print_set_color(uint8_t foreground,uint8_t background);
+int print_char(char character);
+int print_str(char* string);
+int print_set_color(uint8_t foreground,uint8_t background);
