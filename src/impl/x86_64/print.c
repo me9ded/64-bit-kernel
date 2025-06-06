@@ -1,5 +1,5 @@
 #include "print.h"
-
+#include <stdlib.h>
 const static size_t NUM_COLS = 80;
 const static size_t NUM_ROWS = 25;
 
@@ -48,10 +48,10 @@ void print_newline() {
     clear_row(NUM_COLS - 1);
 }
 
-void print_char(char character) {
+int print_char(char character) {
     if (character == '\n') {
         print_newline();
-        return;
+        return EXIT_FAILURE;
     }
 
     if (col > NUM_COLS) {
@@ -64,20 +64,27 @@ void print_char(char character) {
     };
 
     col++;
+    return EXIT_SUCCESS;
 }
 
-void print_str(char* str) {
+int print_str(char* str) {
     for (size_t i = 0; 1; i++) {
         char character = (uint8_t) str[i];
 
         if (character == '\0') {
-            return;
+            return EXIT_FAILURE;
         }
 
         print_char(character);
     }
+
+    return EXIT_SUCCESS;
 }
 
-void print_set_color(uint8_t foreground, uint8_t background) {
-    color = foreground + (background << 4);
+int print_set_color(uint8_t foreground, uint8_t background) {
+    if(0 <= foreground <= 15 || 0 <= background <= 15){
+        color = foreground + (background << 4);
+        return EXIT_SUCCESS;
+    }
+    return EXIT_SUCCESS;
 }
