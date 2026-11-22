@@ -1,22 +1,22 @@
-#include "print.h"
-#include <stdlib.h>
-const static size_t NUM_COLS = 80;
-const static size_t NUM_ROWS = 25;
+#include <print.h>
+
+static const size_t NUM_COLS = 80;
+static const size_t NUM_ROWS = 25;
 
 struct Char {
     uint8_t character;
     uint8_t color;
 };
 
-struct Char* buffer = (struct Char*) 0xb8000;
-size_t col = 0;
-size_t row = 0;
-uint8_t color = PRINT_COLOR_GREEN | PRINT_COLOR_CYAN << 4;
+static struct Char* const buffer = (struct Char*) 0xb8000;
+static size_t col = 0;
+static size_t row = 0;
+static uint8_t color = PRINT_COLOR_GREEN | PRINT_COLOR_CYAN << 4;
 
-void clear_row(size_t row) {
+static void clear_row(size_t row) {
     struct Char empty = (struct Char) {
-        character: ' ',
-        color: color,
+        .character = ' ',
+        .color = color,
     };
 
     for (size_t col = 0; col < NUM_COLS; col++) {
@@ -24,13 +24,13 @@ void clear_row(size_t row) {
     }
 }
 
-void print_clear() {
+void print_clear(void) {
     for (size_t i = 0; i < NUM_ROWS; i++) {
         clear_row(i);
     }
 }
 
-void print_newline() {
+static void print_newline(void) {
     col = 0;
 
     if (row < NUM_ROWS - 1) {
@@ -45,46 +45,41 @@ void print_newline() {
         }
     }
 
-    clear_row(NUM_COLS - 1);
+    clear_row(NUM_ROWS - 1);
 }
 
 int print_char(char character) {
     if (character == '\n') {
         print_newline();
-        return EXIT_FAILURE;
+        return 0;
     }
 
-    if (col > NUM_COLS) {
+    if (col >= NUM_COLS) {
         print_newline();
     }
 
     buffer[col + NUM_COLS * row] = (struct Char) {
-        character: (uint8_t) character,
-        color: color,
+        .character = (uint8_t) character,
+        .color = color,
     };
 
     col++;
-    return EXIT_SUCCESS;
+    return 0;
 }
 
-int print_str(char* str) {
-    for (size_t i = 0; 1; i++) {
-        char character = (uint8_t) str[i];
-
-        if (character == '\0') {
-            return EXIT_FAILURE;
-        }
-
-        print_char(character);
+int print_str(const char* str) {
+    for (size_t i = 0; str[i] != '\0'; i++) {
+        print_char(str[i]);
     }
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int print_set_color(uint8_t foreground, uint8_t background) {
-    if(0 <= foreground <= 15 || 0 <= background <= 15){
-        color = foreground + (background << 4);
-        return EXIT_SUCCESS;
+    if (foreground > 15 || background > 15) {
+        return -1;
     }
-    return EXIT_SUCCESS;
+
+    color = foreground | (background << 4);
+    return 0;
 }

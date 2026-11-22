@@ -1,8 +1,10 @@
 #pragma once
+
 #include <stdint.h>
 #include <stddef.h>
-enum{
-    PRINT_COLOR_BLACK = 0,
+
+enum {
+	PRINT_COLOR_BLACK = 0,
 	PRINT_COLOR_BLUE = 1,
 	PRINT_COLOR_GREEN = 2,
 	PRINT_COLOR_CYAN = 3,
@@ -19,7 +21,9 @@ enum{
 	PRINT_COLOR_YELLOW = 14,
 	PRINT_COLOR_WHITE = 15,
 };
-void print_clear();
+
+/* All functions returning int return 0 on success and -1 on error. */
+void print_clear(void);
 int print_char(char character);
-int print_str(char* string);
-int print_set_color(uint8_t foreground,uint8_t background);
+int print_str(const char* string);
+int print_set_color(uint8_t foreground, uint8_t background);
