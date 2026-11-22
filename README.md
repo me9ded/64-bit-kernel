@@ -18,9 +18,37 @@ make            # outputs dist/x86_64/kernel.iso
 make clean      # removes build outputs
 exit
 
-# Back on your host machine: emulate the operating system with QEMU
-qemu-system-x86_64 -cdrom dist/x86_64/kernel.iso
+# Back on your host machine: emulate the operating system with QEMU.
+# -serial stdio shows the kernel's serial output (kprintf) in your terminal.
+qemu-system-x86_64 -cdrom dist/x86_64/kernel.iso -serial stdio
 ```
+
+# Testing
+
+```sh
+make test       # run on your Mac (not inside the container); needs Docker and QEMU
+```
+
+This runs `tests/run.sh`, which:
+1. **Builds** the kernel and a separate test kernel in the Docker image, with warnings treated as errors.
+2. **Boot-tests** the real kernel: every line in `tests/boot_expect.txt` must appear on the serial port.
+3. **Runs the kernel tests**: the test kernel boots in QEMU, runs every `TEST(...)` in `tests/kernel/`, and reports the result through QEMU's exit code. Crashes (triple faults) and hangs are reported as failures too.
+
+Serial logs are saved in `build/test-logs/`. GitHub Actions (`.github/workflows/ci.yml`) runs the same script on every push to `main` and on every pull request.
+
+To add tests for a new feature, write them in any `.c` file in `tests/kernel/`; they're picked up automatically:
+
+```c
+#include "test.h"
+
+TEST(feature_does_the_thing) {
+    CHECK(condition);
+    CHECK_EQ_INT(actual, expected);
+    CHECK_EQ_STR(actual_string, "expected");
+}
+```
+
+If you change what the kernel prints at boot, update `tests/boot_expect.txt`.
 
 # Final Result
 
