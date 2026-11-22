@@ -15,8 +15,6 @@ start:
 	lgdt[gdt64.pointer]
 	jmp gdt64.code_segment:long_mode_start
 
-	hlt
-
 check_multiboot:
 	cmp eax, 0x36d76289
 	jne .no_multiboot
@@ -77,7 +75,7 @@ setup_page_tables:
 	or eax, 0b10000011 ; present , writable , huge page
 	mov [page_table_l2 + ecx * 8], eax
 
-	inc ecx, ; increment counter
+	inc ecx ; increment counter
 	cmp ecx, 512 ; checks if the whole table is mapped
 	jne .loop ; if not continue
 
@@ -110,7 +108,10 @@ error:
 	mov dword [0xb8004], 0x4f3a4f52
 	mov dword [0xb8008], 0x4f204f20
 	mov byte  [0xb800a], al
+	cli
+.hang:
 	hlt
+	jmp .hang
 
 section .bss
 align 4096
