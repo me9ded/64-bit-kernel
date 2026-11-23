@@ -5,10 +5,12 @@
  */
 #include "test.h"
 #include <cpu.h>
+#include <interrupts.h>
 #include <kprintf.h>
 #include <print.h>
 #include <serial.h>
 #include <stdbool.h>
+#include <timer.h>
 
 /*
  * QEMU's isa-debug-exit device (-device isa-debug-exit,iobase=0xf4,iosize=0x04):
@@ -21,6 +23,7 @@
 extern const struct test_case __tests_start[];
 extern const struct test_case __tests_end[];
 
+static const char* current_test_name;
 static int current_test_failures;
 static int tests_passed;
 static bool expecting_panic;
@@ -51,14 +54,18 @@ void test_fail(const char* file, int line, const char* format, ...) {
 }
 
 /*
- * Last test: panic() never returns, so it runs after all the others. Its
- * message must appear on screen in white on red, then panic() calls panic_hook().
+ * Last test: an unhandled CPU exception (ud2 = invalid opcode) must go through
+ * the IDT, the asm stub and interrupt_dispatch() into panic(), whose message
+ * must appear on screen in white on red. panic() never returns, so this runs
+ * after all the other tests and finishes in panic_hook().
  */
-static const char* const PANIC_LINE = "KERNEL PANIC: test panic 123";
+static const char* const PANIC_TEST_NAME = "unhandled_exception_panics_in_white_on_red";
+static const char* const PANIC_LINE = "KERNEL PANIC: Invalid opcode (#UD, vector 6)";
 
 void panic_hook(void) {
     if (!expecting_panic) {
-        test_log("FAIL unexpected kernel panic (message above)\n");
+        test_log("FAIL %s: unexpected kernel panic (message above)\n",
+                 current_test_name ? current_test_name : "(outside a test)");
         qemu_exit(QEMU_EXIT_FAILURE);
     }
 
@@ -74,10 +81,10 @@ void panic_hook(void) {
     }
 
     if (!ok) {
-        test_log("FAIL panic_shows_message_in_white_on_red\n");
+        test_log("FAIL %s\n", PANIC_TEST_NAME);
         qemu_exit(QEMU_EXIT_FAILURE);
     }
-    test_log("PASS panic_shows_message_in_white_on_red\n");
+    test_log("PASS %s\n", PANIC_TEST_NAME);
     test_log("=== ALL %d TESTS PASSED ===\n", tests_passed + 1);
     qemu_exit(QEMU_EXIT_SUCCESS);
 }
@@ -87,10 +94,15 @@ void kernel_main(void) {
         qemu_exit(QEMU_EXIT_FAILURE); /* can't report anything without serial */
     }
 
+    interrupts_init();
+    timer_init(100);
+    sti();
+
     test_log("=== kernel tests ===\n");
     int failed = 0;
 
     for (const struct test_case* test = __tests_start; test < __tests_end; test++) {
+        current_test_name = test->name;
         current_test_failures = 0;
         test->run();
         if (current_test_failures == 0) {
@@ -107,8 +119,13 @@ void kernel_main(void) {
         qemu_exit(QEMU_EXIT_FAILURE);
     }
 
+    current_test_name = PANIC_TEST_NAME;
     expecting_panic = true;
+    interrupt_set_handler(6, NULL); /* make sure nothing handles #UD */
     print_set_color(PRINT_COLOR_YELLOW, PRINT_COLOR_BLACK);
     print_clear();
-    panic("test panic %d", 123); /* continues in panic_hook() */
+    __asm__ volatile ("ud2"); /* -> interrupt_dispatch -> panic -> panic_hook */
+
+    test_log("FAIL %s: ud2 did not trigger a panic\n", PANIC_TEST_NAME);
+    qemu_exit(QEMU_EXIT_FAILURE);
 }
