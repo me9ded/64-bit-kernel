@@ -1,4 +1,5 @@
 #include <shell.h>
+#include <bootinfo.h>
 #include <calc.h>
 #include <kprintf.h>
 #include <power.h>
@@ -27,6 +28,8 @@ static int cmd_color(int argc, char** argv);
 static int cmd_uptime(int argc, char** argv);
 static int cmd_sleep(int argc, char** argv);
 static int cmd_date(int argc, char** argv);
+static int cmd_mem(int argc, char** argv);
+static int cmd_bootinfo(int argc, char** argv);
 static int cmd_reboot(int argc, char** argv);
 static int cmd_shutdown(int argc, char** argv);
 
@@ -39,6 +42,8 @@ static const struct command commands[] = {
     { "uptime",   "uptime",            "time since the computer started",          cmd_uptime },
     { "sleep",    "sleep <seconds>",   "wait for a number of seconds",             cmd_sleep },
     { "date",     "date",              "current date and time (UTC)",              cmd_date },
+    { "mem",      "mem",               "show the physical memory map",             cmd_mem },
+    { "bootinfo", "bootinfo",          "show what the bootloader passed in",       cmd_bootinfo },
     { "reboot",   "reboot",            "restart the computer",                     cmd_reboot },
     { "shutdown", "shutdown",          "power off the computer",                   cmd_shutdown },
 };
@@ -191,6 +196,65 @@ static int cmd_date(int argc, char** argv) {
     rtc_read(&now);
     kprintf("%04u-%02u-%02u %02u:%02u:%02u UTC\n",
             now.year, now.month, now.day, now.hour, now.minute, now.second);
+    return 0;
+}
+
+/* "639 KiB", "127 MiB", "4 GiB" (rounded down) */
+static void format_size(uint64_t bytes, char* out, size_t size) {
+    if (bytes >= (1ull << 30)) {
+        ksnprintf(out, size, "%lu GiB", bytes >> 30);
+    } else if (bytes >= (1ull << 20)) {
+        ksnprintf(out, size, "%lu MiB", bytes >> 20);
+    } else if (bytes >= (1ull << 10)) {
+        ksnprintf(out, size, "%lu KiB", bytes >> 10);
+    } else {
+        ksnprintf(out, size, "%lu B", bytes);
+    }
+}
+
+static int cmd_mem(int argc, char** argv) {
+    (void) argc;
+    (void) argv;
+    const struct boot_info* info = boot_info();
+    if (info == NULL) {
+        kprintf("no memory map: the bootloader's information wasn't found\n");
+        return 1;
+    }
+
+    char size[16];
+    kprintf("Memory map (from the bootloader):\n");
+    for (size_t i = 0; i < info->region_count; i++) {
+        const struct memory_region* region = &info->regions[i];
+        uint64_t last = region->length ? region->base + region->length - 1 : region->base;
+        format_size(region->length, size, sizeof size);
+        kprintf("  0x%016lx-0x%016lx %9s  %s\n",
+                region->base, last, size, memory_type_name(region->type));
+    }
+    if (info->regions_truncated) {
+        kprintf("  (more regions not shown)\n");
+    }
+
+    format_size(bootinfo_usable_bytes(info), size, sizeof size);
+    kprintf("usable: %s\n", size);
+
+    uint64_t kernel_bytes = (uint64_t) (__kernel_end - __kernel_start);
+    format_size(kernel_bytes, size, sizeof size);
+    kprintf("kernel: 0x%lx-0x%lx (%s)\n",
+            (uint64_t) (uintptr_t) __kernel_start, (uint64_t) (uintptr_t) __kernel_end - 1, size);
+    return 0;
+}
+
+static int cmd_bootinfo(int argc, char** argv) {
+    (void) argc;
+    (void) argv;
+    const struct boot_info* info = boot_info();
+    if (info == NULL) {
+        kprintf("no boot information: the bootloader's information wasn't found\n");
+        return 1;
+    }
+    kprintf("bootloader: %s\n", info->bootloader_name[0] ? info->bootloader_name : "(unknown)");
+    kprintf("command line: %s\n", info->command_line[0] ? info->command_line : "(empty)");
+    kprintf("boot info block: 0x%lx (%u bytes)\n", info->info_address, info->info_size);
     return 0;
 }
 

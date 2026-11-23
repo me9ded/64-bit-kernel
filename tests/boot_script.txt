@@ -11,6 +11,7 @@
 
 expect Welcome to our 64-bit kernel
 expect serial: COM1 ready
+expect memory: 127 MiB usable
 expect interrupts: IDT loaded, PIC remapped
 expect timer: 100 Hz
 expect timer: 1 second passed
@@ -54,6 +55,15 @@ expect UTC
 type uptime
 key ret
 expect up 0
+
+type mem
+key ret
+expect usable: 127 MiB
+expect kernel: 0x100000-
+
+type bootinfo
+key ret
+expect bootloader: GRUB
 
 # reboot must really restart the machine
 type reboot

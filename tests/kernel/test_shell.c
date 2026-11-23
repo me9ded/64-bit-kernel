@@ -53,7 +53,8 @@ TEST(shell_too_many_arguments) {
 
 TEST(shell_help_lists_every_command) {
     static const char* const names[] = {
-        "help", "clear", "echo", "calc", "color", "uptime", "sleep", "date", "reboot", "shutdown",
+        "help", "clear", "echo", "calc", "color", "uptime", "sleep", "date", "mem", "bootinfo",
+        "reboot", "shutdown",
     };
     CHECK_EQ_INT(run("help"), 0);
     for (size_t i = 0; i < sizeof names / sizeof names[0]; i++) {
@@ -148,4 +149,17 @@ TEST(shell_date_format) {
     CHECK_EQ_INT(row[7], '-');
     CHECK_EQ_INT(row[13], ':');
     CHECK_EQ_STR(row + 19, " UTC");
+}
+
+TEST(shell_mem) {
+    CHECK_EQ_INT(run("mem"), 0);
+    CHECK(vga_contains("Memory map"));
+    CHECK(vga_contains("usable: 12"));      /* 127 MiB with -m 128M */
+    CHECK(vga_contains("kernel: 0x100000-"));
+}
+
+TEST(shell_bootinfo) {
+    CHECK_EQ_INT(run("bootinfo"), 0);
+    CHECK(vga_contains("bootloader: GRUB"));
+    CHECK(vga_contains("command line:"));
 }

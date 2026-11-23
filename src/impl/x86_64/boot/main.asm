@@ -4,6 +4,10 @@ extern long_mode_start
 section .text
 bits 32
 start:
+	; GRUB passes the multiboot2 boot information address in ebx. Keep it in
+	; edi: cpuid (in check_long_mode) overwrites ebx, but nothing below touches
+	; edi, and edi becomes the first argument of kernel_main in long mode.
+	mov edi, ebx
 	mov esp, stack_top
 	call check_multiboot
 	call check_cpuid

@@ -3,6 +3,7 @@ ENTRY(start)
 SECTIONS
 {
 	. = 1M;
+	__kernel_start = .;
 
 	.boot :
 	{
@@ -36,4 +37,8 @@ SECTIONS
 		*(COMMON)
 		*(.bss .bss.*)
 	}
+
+	/* first byte after the kernel image, rounded up to a whole page */
+	. = ALIGN(4K);
+	__kernel_end = .;
 }
