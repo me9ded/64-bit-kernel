@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stddef.h>
 
 /*
@@ -15,6 +16,13 @@
 __attribute__((format(printf, 1, 2)))
 int kprintf(const char* format, ...);
 int vkprintf(const char* format, va_list args);
+
+/*
+ * Whether kprintf also copies its output to the serial port (default: true).
+ * The test kernel turns this off to keep its serial log readable; panic()
+ * always turns it back on so crash reports are never lost.
+ */
+void kprintf_set_serial_mirror(bool enabled);
 
 /*
  * Format into `buffer` (at most size-1 characters, always NUL-terminated when size > 0).

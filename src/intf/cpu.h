@@ -15,6 +15,17 @@ static inline uint8_t inb(uint16_t port) {
     return value;
 }
 
+/* Write / read two bytes (a "word") on an x86 I/O port. */
+static inline void outw(uint16_t port, uint16_t value) {
+    __asm__ volatile ("outw %0, %1" : : "a"(value), "Nd"(port));
+}
+
+static inline uint16_t inw(uint16_t port) {
+    uint16_t value;
+    __asm__ volatile ("inw %1, %0" : "=a"(value) : "Nd"(port));
+    return value;
+}
+
 /* Tiny delay for slow legacy devices: port 0x80 is an unused POST-code port. */
 static inline void io_wait(void) {
     outb(0x80, 0);

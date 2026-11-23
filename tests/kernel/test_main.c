@@ -9,6 +9,7 @@
 #include <keyboard.h>
 #include <kprintf.h>
 #include <print.h>
+#include <readline.h>
 #include <serial.h>
 #include <stdbool.h>
 #include <timer.h>
@@ -94,11 +95,15 @@ void kernel_main(void) {
     if (serial_init() != 0) {
         qemu_exit(QEMU_EXIT_FAILURE); /* can't report anything without serial */
     }
+    /* Keep the serial log for test results only: what the code under test
+       prints still goes to the screen, where tests check it. */
+    kprintf_set_serial_mirror(false);
 
     interrupts_init();
     timer_init(100);
     sti();
     keyboard_init();
+    readline_clear_history();
 
     test_log("=== kernel tests ===\n");
     int failed = 0;

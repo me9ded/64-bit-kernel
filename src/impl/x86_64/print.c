@@ -149,3 +149,7 @@ int print_set_color(uint8_t foreground, uint8_t background) {
     color = foreground | (background << 4);
     return 0;
 }
+
+uint8_t print_get_color(void) {
+    return color;
+}

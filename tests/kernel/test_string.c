@@ -53,3 +53,14 @@ TEST(strncmp_stops_after_n) {
     CHECK(strncmp("ab", "abc", 10) < 0);
     CHECK_EQ_INT(strncmp("x", "y", 0), 0);
 }
+
+TEST(strstr_finds_substrings) {
+    const char* text = "hello world";
+    CHECK(strstr(text, "world") == text + 6);
+    CHECK(strstr(text, "hello") == text);
+    CHECK(strstr(text, "o w") == text + 4);
+    CHECK(strstr(text, "") == text);
+    CHECK(strstr(text, "worlds") == NULL);
+    CHECK(strstr(text, "xyz") == NULL);
+    CHECK(strstr("", "a") == NULL);
+}
