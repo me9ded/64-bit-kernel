@@ -23,6 +23,25 @@ exit
 qemu-system-x86_64 -cdrom dist/x86_64/kernel.iso -serial stdio
 ```
 
+# Using the shell
+
+After booting, the kernel starts a shell. Type a command and press Enter:
+
+| Command | What it does |
+|---|---|
+| `help` | list the commands |
+| `clear` | clear the screen |
+| `echo <text...>` | print text |
+| `calc <expression>` | integer math with `+ - * / %` and parentheses, e.g. `calc (2 + 3) * 4` |
+| `color <fg> [bg]` | change the text color, e.g. `color light-green` (`color` alone lists the names) |
+| `uptime` | time since the computer started |
+| `sleep <seconds>` | wait |
+| `date` | current date and time (UTC) from the real-time clock |
+| `reboot` | restart the computer |
+| `shutdown` | power off (works in QEMU, Bochs and VirtualBox) |
+
+Up/Down recall previous commands, and Ctrl+C cancels the line you're typing.
+
 # Testing
 
 ```sh
@@ -51,9 +70,10 @@ TEST(feature_does_the_thing) {
 If you change what the kernel prints or how it responds to input, update `tests/boot_script.txt`. Its commands:
 
 ```
-expect timer: 100 Hz      # wait until this text appears on the serial port
-type Hello World          # type text on the keyboard (Shift is added for capitals)
+expect = 20               # wait for this text on the serial port (after the previous match)
+type calc (2 + 3) * 4     # type text on the keyboard (Shift is added where needed)
 key ret                   # press one key by QEMU name: ret, backspace, ctrl-c, up, ...
+expect-poweroff           # the machine must power off (QEMU exits); must be the last line
 ```
 
 # Final Result

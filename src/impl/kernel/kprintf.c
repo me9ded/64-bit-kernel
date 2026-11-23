@@ -21,10 +21,18 @@ static void put(struct sink* sink, char character) {
     sink->count++;
 }
 
+static bool serial_mirror = true;
+
+void kprintf_set_serial_mirror(bool enabled) {
+    serial_mirror = enabled;
+}
+
 static void console_put(struct sink* sink, char character) {
     (void) sink;
     print_char(character);
-    serial_write_char(character);
+    if (serial_mirror) {
+        serial_write_char(character);
+    }
 }
 
 static void buffer_put(struct sink* sink, char character) {
@@ -232,6 +240,7 @@ int ksnprintf(char* buffer, size_t size, const char* format, ...) {
 }
 
 void panic(const char* format, ...) {
+    serial_mirror = true;
     print_set_color(PRINT_COLOR_WHITE, PRINT_COLOR_RED);
     kprintf("\nKERNEL PANIC: ");
 

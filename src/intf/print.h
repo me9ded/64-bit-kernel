@@ -35,5 +35,8 @@ int print_char(char character);
 int print_str(const char* string);
 int print_set_color(uint8_t foreground, uint8_t background);
 
+/* Current color: foreground in the low 4 bits, background in the high 4 bits. */
+uint8_t print_get_color(void);
+
 /* Show the blinking hardware cursor (it follows the text automatically). */
 void print_enable_cursor(void);

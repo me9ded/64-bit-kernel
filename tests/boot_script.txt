@@ -1,11 +1,13 @@
 # Boot test for the real kernel (src/impl/kernel/main.c), run by tests/run.sh.
-# Update this when main.c's behaviour changes.
+# Update this when the kernel's behaviour changes.
 #
 # Commands, one per line, run in order:
-#   expect <text>   wait until <text> appears on the serial port
-#   type <text>     type <text> on the keyboard (letters, digits, space, punctuation)
-#   key <name>      press one key by its QEMU name: ret, backspace, tab, esc,
-#                   ctrl-c, up, down, left, right, ...
+#   expect <text>     wait until <text> appears on the serial port, after
+#                     whatever the previous `expect` matched
+#   type <text>       type <text> on the keyboard (letters, digits, space, punctuation)
+#   key <name>        press one key by its QEMU name: ret, backspace, tab, esc,
+#                     ctrl-c, up, down, left, right, ...
+#   expect-poweroff   the machine must power off (QEMU exits by itself); must be last
 
 expect Welcome to our 64-bit kernel
 expect serial: COM1 ready
@@ -13,20 +15,54 @@ expect interrupts: IDT loaded, PIC remapped
 expect timer: 100 Hz
 expect timer: 1 second passed
 expect keyboard: ready
+expect Type 'help'
 
-# typing, including Shift for capitals
-type Hello World
+type help
 key ret
-expect you typed: Hello World
+expect calc <expression>
+expect shutdown
 
-# Backspace editing
-type abx
-key backspace
-type c
+type calc (2 + 3) * 4
 key ret
-expect you typed: abc
+expect = 20
+
+type calc 7 / 0
+key ret
+expect error: division by zero
+
+type foo
+key ret
+expect unknown command: foo
+
+# Up recalls the previous command
+type calc 6*7
+key ret
+expect = 42
+key up
+key ret
+expect = 42
 
 # Ctrl+C cancels the line
 type oops
 key ctrl-c
-expect (cancelled)
+expect ^C
+
+type date
+key ret
+expect UTC
+
+type uptime
+key ret
+expect up 0
+
+# reboot must really restart the machine
+type reboot
+key ret
+expect Rebooting
+expect Welcome to our 64-bit kernel
+expect Type 'help'
+
+type shutdown
+key ret
+expect Powering off
+expect-poweroff

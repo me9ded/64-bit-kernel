@@ -78,6 +78,30 @@ static inline uint8_t vga_color(size_t row, size_t col) {
     return (uint8_t) (vga_cell(row, col) >> 8);
 }
 
+/* Copy screen row `row` into `out` as a string, without trailing spaces. */
+static inline void vga_row_text(size_t row, char* out, size_t size) {
+    size_t length = 0;
+    for (size_t col = 0; col < 80 && length + 1 < size; col++) {
+        out[length++] = vga_char(row, col);
+    }
+    while (length > 0 && out[length - 1] == ' ') {
+        length--;
+    }
+    out[length] = '\0';
+}
+
+/* True if `text` appears anywhere on screen (within a single row). */
+static inline int vga_contains(const char* text) {
+    char row[81];
+    for (size_t r = 0; r < 25; r++) {
+        vga_row_text(r, row, sizeof row);
+        if (strstr(row, text) != NULL) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 /* Hardware cursor position (row * 80 + col), read back from the VGA controller. */
 static inline uint16_t vga_cursor(void) {
     outb(0x3D4, 0x0F);

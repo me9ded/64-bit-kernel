@@ -69,3 +69,13 @@ int strncmp(const char* a, const char* b, size_t count) {
     }
     return 0;
 }
+
+char* strstr(const char* haystack, const char* needle) {
+    size_t length = strlen(needle);
+    for (; *haystack != '\0'; haystack++) {
+        if (strncmp(haystack, needle, length) == 0) {
+            return (char*) haystack;
+        }
+    }
+    return length == 0 ? (char*) haystack : NULL;
+}

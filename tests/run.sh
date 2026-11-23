@@ -105,7 +105,9 @@ key_name() {
 # Runs tests/boot_script.txt. Its output is piped into the QEMU monitor, so
 # every `echo sendkey ...` presses a key in the virtual machine.
 run_boot_script() {
-    local line command argument deadline i name
+    set +e +o pipefail  # this runs in its own subshell: handle failures by hand
+    local line command argument deadline i name match
+    local offset=0      # `expect` only searches output after the previous match
     while IFS= read -r line; do
         case "$line" in ''|'#'*) continue ;; esac
         command=${line%% *}
@@ -115,7 +117,9 @@ run_boot_script() {
         case "$command" in
             expect)
                 deadline=$((SECONDS + TIMEOUT))
-                until grep -qF -- "$argument" "$boot_log"; do
+                while :; do
+                    match=$(tail -c +$((offset + 1)) "$boot_log" | grep -boF -- "$argument" | head -n 1)
+                    [ -n "$match" ] && break
                     [ -f "$script_stop" ] && return
                     if [ $SECONDS -ge $deadline ]; then
                         printf 'timed out after %ss waiting for: %s\n' "$TIMEOUT" "$argument" > "$script_status"
@@ -123,6 +127,16 @@ run_boot_script() {
                     fi
                     sleep 0.2
                 done
+                offset=$((offset + ${match%%:*} + ${#argument}))
+                ;;
+            expect-poweroff)
+                # The main loop checks that QEMU exits by itself. Keep the
+                # monitor's input open meanwhile so QEMU can't stop for that reason.
+                echo await-poweroff > "$script_status"
+                while [ ! -f "$script_stop" ]; do
+                    sleep 0.2
+                done
+                return
                 ;;
             type)
                 for ((i = 0; i < ${#argument}; i++)); do
@@ -147,23 +161,38 @@ run_boot_script() {
     echo ok > "$script_status"
 }
 
+# No -no-reboot here: the `reboot` command must really restart the machine.
+# (A crash then reboots too, and shows up as an `expect` that times out.)
 run_boot_script | qemu-system-x86_64 -cdrom dist/x86_64/kernel.iso -boot d -display none \
-    -monitor stdio -serial "file:$boot_log" -no-reboot > "$monitor_log" 2>&1 &
+    -monitor stdio -serial "file:$boot_log" > "$monitor_log" 2>&1 &
 QEMU_PID=$!
 
 deadline=$((SECONDS + 5 * TIMEOUT))   # safety net; each expect has its own timeout
 while [ ! -f "$script_status" ] && [ $SECONDS -lt $deadline ] && kill -0 "$QEMU_PID" 2>/dev/null; do
     sleep 0.5
 done
+
+script_result=$(cat "$script_status" 2>/dev/null || true)
+if [ "$script_result" = await-poweroff ]; then
+    deadline=$((SECONDS + TIMEOUT))
+    while kill -0 "$QEMU_PID" 2>/dev/null && [ $SECONDS -lt $deadline ]; do
+        sleep 0.5
+    done
+    if kill -0 "$QEMU_PID" 2>/dev/null; then
+        script_result="QEMU was still running ${TIMEOUT}s after expect-poweroff"
+    else
+        script_result=ok
+    fi
+fi
 touch "$script_stop"
 stop_qemu
 
 sed 's/^/    | /' "$boot_log"
 echo
-if [ "$(cat "$script_status" 2>/dev/null)" = ok ]; then
+if [ "$script_result" = ok ]; then
     pass "kernel booted and passed every step of tests/boot_script.txt"
-elif [ -f "$script_status" ]; then
-    fail "boot script: $(cat "$script_status")"
+elif [ -n "$script_result" ]; then
+    fail "boot script: $script_result"
 else
     fail "QEMU stopped during step: $(cat "$script_step" 2>/dev/null) (crash? see $monitor_log)"
 fi
@@ -188,7 +217,7 @@ wait "$QEMU_PID" 2>/dev/null || status=$?
 
 sed 's/^/    | /' "$test_log"
 if [ $timed_out = 1 ]; then
-    fail "test kernel hung: no result after ${TIMEOUT}s (infinite loop or halted CPU?)"
+    fail "test kernel hung: no result after ${TIMEOUT}s (the test after the last PASS/FAIL line never finished)"
 elif [ $status = $QEMU_EXIT_SUCCESS ]; then
     pass "all kernel tests passed"
 elif [ $status = $QEMU_EXIT_FAILURE ]; then
