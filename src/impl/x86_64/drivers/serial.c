@@ -50,6 +50,10 @@ void serial_write_char(char character) {
     }
     if (character == '\n') {
         serial_put_raw('\r');
+    } else if (character == '\b') {
+        /* terminals only move left on '\b': overwrite the character with a space */
+        serial_put_raw('\b');
+        serial_put_raw(' ');
     }
     serial_put_raw(character);
 }

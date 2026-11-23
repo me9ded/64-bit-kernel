@@ -83,3 +83,55 @@ TEST(print_set_color_accepts_valid_and_rejects_invalid) {
     print_char('B');
     CHECK_EQ_INT(vga_color(0, 1), WHITE_ON_RED); /* color unchanged after rejection */
 }
+
+TEST(backspace_erases_previous_character) {
+    print_clear();
+    print_str("ab\b");
+    CHECK_EQ_INT(vga_char(0, 0), 'a');
+    CHECK_EQ_INT(vga_char(0, 1), ' ');
+    print_char('c');
+    CHECK_EQ_INT(vga_char(0, 1), 'c');
+}
+
+TEST(backspace_at_line_start_goes_to_previous_row) {
+    print_clear();
+    for (int i = 0; i < 80; i++) {
+        print_char('x');
+    }
+    print_str("\n\b");           /* back from (1,0) to the last cell of row 0 */
+    CHECK_EQ_INT(vga_char(0, 79), ' ');
+    print_char('y');
+    CHECK_EQ_INT(vga_char(0, 79), 'y');
+}
+
+TEST(backspace_at_top_left_does_nothing) {
+    print_clear();
+    print_str("\b\bz");
+    CHECK_EQ_INT(vga_char(0, 0), 'z');
+}
+
+TEST(tab_moves_to_next_multiple_of_8) {
+    print_clear();
+    print_str("a\tb\tc");
+    CHECK_EQ_INT(vga_char(0, 0), 'a');
+    CHECK_EQ_INT(vga_char(0, 1), ' ');
+    CHECK_EQ_INT(vga_char(0, 8), 'b');
+    CHECK_EQ_INT(vga_char(0, 16), 'c');
+
+    print_clear();
+    print_str("12345678\tX");    /* already on a tab stop: moves a full 8 */
+    CHECK_EQ_INT(vga_char(0, 16), 'X');
+}
+
+TEST(hardware_cursor_follows_text) {
+    print_clear();
+    CHECK_EQ_INT(vga_cursor(), 0);
+    print_str("abc");
+    CHECK_EQ_INT(vga_cursor(), 3);
+    print_str("\n");
+    CHECK_EQ_INT(vga_cursor(), 80);
+    print_str("x\b");
+    CHECK_EQ_INT(vga_cursor(), 80);
+    print_str("\t");
+    CHECK_EQ_INT(vga_cursor(), 88);
+}

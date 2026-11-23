@@ -1,0 +1,32 @@
+# Boot test for the real kernel (src/impl/kernel/main.c), run by tests/run.sh.
+# Update this when main.c's behaviour changes.
+#
+# Commands, one per line, run in order:
+#   expect <text>   wait until <text> appears on the serial port
+#   type <text>     type <text> on the keyboard (letters, digits, space, punctuation)
+#   key <name>      press one key by its QEMU name: ret, backspace, tab, esc,
+#                   ctrl-c, up, down, left, right, ...
+
+expect Welcome to our 64-bit kernel
+expect serial: COM1 ready
+expect interrupts: IDT loaded, PIC remapped
+expect timer: 100 Hz
+expect timer: 1 second passed
+expect keyboard: ready
+
+# typing, including Shift for capitals
+type Hello World
+key ret
+expect you typed: Hello World
+
+# Backspace editing
+type abx
+key backspace
+type c
+key ret
+expect you typed: abc
+
+# Ctrl+C cancels the line
+type oops
+key ctrl-c
+expect (cancelled)
