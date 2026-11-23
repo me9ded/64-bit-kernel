@@ -57,7 +57,7 @@ start_qemu() {
     local iso=$1 log=$2
     shift 2
     : > "$log"
-    qemu-system-x86_64 -cdrom "$iso" -boot d -display none -monitor none \
+    qemu-system-x86_64 -cdrom "$iso" -m 128M -boot d -display none -monitor none \
         -serial "file:$log" -no-reboot "$@" &
     QEMU_PID=$!
 }
@@ -163,7 +163,7 @@ run_boot_script() {
 
 # No -no-reboot here: the `reboot` command must really restart the machine.
 # (A crash then reboots too, and shows up as an `expect` that times out.)
-run_boot_script | qemu-system-x86_64 -cdrom dist/x86_64/kernel.iso -boot d -display none \
+run_boot_script | qemu-system-x86_64 -cdrom dist/x86_64/kernel.iso -m 128M -boot d -display none \
     -monitor stdio -serial "file:$boot_log" > "$monitor_log" 2>&1 &
 QEMU_PID=$!
 

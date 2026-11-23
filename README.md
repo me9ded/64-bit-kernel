@@ -37,6 +37,8 @@ After booting, the kernel starts a shell. Type a command and press Enter:
 | `uptime` | time since the computer started |
 | `sleep <seconds>` | wait |
 | `date` | current date and time (UTC) from the real-time clock |
+| `mem` | the physical memory map from the bootloader, total usable RAM, and where the kernel is |
+| `bootinfo` | the bootloader's name and the kernel command line |
 | `reboot` | restart the computer |
 | `shutdown` | power off (works in QEMU, Bochs and VirtualBox) |
 

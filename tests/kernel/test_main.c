@@ -4,6 +4,7 @@
  * status code that tests/run.sh checks.
  */
 #include "test.h"
+#include <bootinfo.h>
 #include <cpu.h>
 #include <interrupts.h>
 #include <keyboard.h>
@@ -91,7 +92,11 @@ void panic_hook(void) {
     qemu_exit(QEMU_EXIT_SUCCESS);
 }
 
-void kernel_main(void) {
+void kernel_main(uint64_t multiboot_info);
+void kernel_main(uint64_t multiboot_info) {
+    /* tests check boot_info() themselves: a failure here is reported there */
+    bootinfo_init(multiboot_info);
+
     if (serial_init() != 0) {
         qemu_exit(QEMU_EXIT_FAILURE); /* can't report anything without serial */
     }
