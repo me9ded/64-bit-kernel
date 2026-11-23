@@ -6,6 +6,7 @@
 #include "test.h"
 #include <cpu.h>
 #include <interrupts.h>
+#include <keyboard.h>
 #include <kprintf.h>
 #include <print.h>
 #include <serial.h>
@@ -97,6 +98,7 @@ void kernel_main(void) {
     interrupts_init();
     timer_init(100);
     sti();
+    keyboard_init();
 
     test_log("=== kernel tests ===\n");
     int failed = 0;

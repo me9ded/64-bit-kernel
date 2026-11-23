@@ -1,7 +1,0 @@
-# Lines the real kernel (src/impl/kernel/main.c) must print on the serial port
-# during boot. tests/run.sh fails if any is missing. Update this when main.c changes.
-Welcome to our 64-bit kernel
-serial: COM1 ready
-interrupts: IDT loaded, PIC remapped
-timer: 100 Hz
-timer: 1 second passed

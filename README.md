@@ -31,7 +31,7 @@ make test       # run on your Mac (not inside the container); needs Docker and Q
 
 This runs `tests/run.sh`, which:
 1. **Builds** the kernel and a separate test kernel in the Docker image, with warnings treated as errors.
-2. **Boot-tests** the real kernel: every line in `tests/boot_expect.txt` must appear on the serial port.
+2. **Boot-tests** the real kernel by following `tests/boot_script.txt`: it waits for output on the serial port and types on the keyboard through QEMU, so it checks the kernel end to end.
 3. **Runs the kernel tests**: the test kernel boots in QEMU, runs every `TEST(...)` in `tests/kernel/`, and reports the result through QEMU's exit code. Crashes (triple faults) and hangs are reported as failures too.
 
 Serial logs are saved in `build/test-logs/`. GitHub Actions (`.github/workflows/ci.yml`) runs the same script on every push to `main` and on every pull request.
@@ -48,7 +48,13 @@ TEST(feature_does_the_thing) {
 }
 ```
 
-If you change what the kernel prints at boot, update `tests/boot_expect.txt`.
+If you change what the kernel prints or how it responds to input, update `tests/boot_script.txt`. Its commands:
+
+```
+expect timer: 100 Hz      # wait until this text appears on the serial port
+type Hello World          # type text on the keyboard (Shift is added for capitals)
+key ret                   # press one key by QEMU name: ret, backspace, ctrl-c, up, ...
+```
 
 # Final Result
 

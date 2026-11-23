@@ -16,6 +16,7 @@
  * Results go to the serial port only, so tests can inspect the screen freely.
  */
 
+#include <cpu.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
@@ -75,4 +76,13 @@ static inline char vga_char(size_t row, size_t col) {
 }
 static inline uint8_t vga_color(size_t row, size_t col) {
     return (uint8_t) (vga_cell(row, col) >> 8);
+}
+
+/* Hardware cursor position (row * 80 + col), read back from the VGA controller. */
+static inline uint16_t vga_cursor(void) {
+    outb(0x3D4, 0x0F);
+    uint16_t low = inb(0x3D5);
+    outb(0x3D4, 0x0E);
+    uint16_t high = inb(0x3D5);
+    return (uint16_t) ((high << 8) | low);
 }

@@ -24,6 +24,16 @@ enum {
 
 /* All functions returning int return 0 on success and -1 on error. */
 void print_clear(void);
+
+/*
+ * Print one character at the cursor. Besides normal characters it handles:
+ *   '\n'  move to the start of the next line (scrolling at the bottom)
+ *   '\b'  erase the previous character (going back a row at column 0)
+ *   '\t'  move to the next multiple of 8 columns
+ */
 int print_char(char character);
 int print_str(const char* string);
 int print_set_color(uint8_t foreground, uint8_t background);
+
+/* Show the blinking hardware cursor (it follows the text automatically). */
+void print_enable_cursor(void);

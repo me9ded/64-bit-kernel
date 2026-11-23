@@ -5,6 +5,7 @@
 /* Initialise COM1 at 38400 baud, 8N1. Returns 0 on success, -1 if no working UART was found. */
 int serial_init(void);
 
-/* Write to COM1. Does nothing if serial_init() failed or wasn't called. '\n' is sent as "\r\n". */
+/* Write to COM1. Does nothing if serial_init() failed or wasn't called. '\n' is sent as "\r\n",
+ * '\b' as "\b \b" (so terminals erase the character). */
 void serial_write_char(char character);
 void serial_write_str(const char* string);
